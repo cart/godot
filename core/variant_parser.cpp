@@ -761,7 +761,6 @@ Error VariantParser::parse_value(Token &token, Variant &value, Stream *p_stream,
 			}
 
 			return OK;
-#ifndef DISABLE_DEPRECATED
 		} else if (id == "InputEvent") {
 
 			get_token(p_stream, token, line, r_err_str);
@@ -952,7 +951,6 @@ Error VariantParser::parse_value(Token &token, Variant &value, Stream *p_stream,
 			value = ie;
 
 			return OK;
-#endif
 		} else if (id == "PoolByteArray" || id == "ByteArray") {
 
 			Vector<uint8_t> args;
@@ -1629,6 +1627,43 @@ Error VariantWriter::write(const Variant &p_variant, StoreStringFunc p_store_str
 				//external resource
 				String path = res->get_path();
 				res_text = "Resource( \"" + path + "\")";
+			}
+
+			Ref<InputEvent> input_event = p_variant;
+			if (input_event.is_valid()) {
+				res_text = "InputEvent(";
+					
+				Ref<InputEventKey> input_event_key = p_variant;
+				Ref<InputEventMouseButton> input_event_mouse_button = p_variant;
+				Ref<InputEventJoypadButton> input_event_joypad_button = p_variant;
+				Ref<InputEventJoypadMotion> input_event_joypad_motion = p_variant;
+
+				if (input_event_key.is_valid()) {
+					res_text += "KEY," + itos(input_event_key->get_scancode());
+					String mod;
+					if (input_event_key->get_alt())
+						mod += "A";
+					if (input_event_key->get_shift())
+						mod += "S";
+					if (input_event_key->get_control())
+						mod += "C";
+					if (input_event_key->get_metakey())
+						mod += "M";
+
+					if (mod != String())
+						res_text += "," + mod;
+
+				} else if (input_event_mouse_button.is_valid()) {
+					res_text += "MBUTTON," + itos(input_event_mouse_button->get_button_index());
+				} else if (input_event_joypad_button.is_valid()) {
+					res_text += "JBUTTON," + itos(input_event_joypad_button->get_button_index());
+				} else if (input_event_joypad_motion.is_valid()) {
+					res_text += "JAXIS," + itos(input_event_joypad_motion->get_axis()) + "," + itos(input_event_joypad_motion->get_axis_value());
+				} else {
+					res_text += "NONE";
+				}
+				
+				res_text += ")";
 			}
 
 			if (res_text == String())
