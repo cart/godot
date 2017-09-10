@@ -676,7 +676,8 @@ void RigidBodyBullet::set_axis_lock(PhysicsServer::BodyAxisLock p_lock) {
 	} else if (PhysicsServer::BODY_AXIS_LOCK_X == p_lock) {
 		btBody->setLinearFactor(btVector3(0., 1., 1.));
 	} else if (PhysicsServer::BODY_AXIS_LOCK_Y == p_lock) {
-		btBody->setLinearFactor(btVector3(1., 0., 1.));
+		btBody->setLinearFactor(btVector3(1., 1., 0.));
+		btBody->setAngularFactor(btVector3(1., 1., 0.));
 	} else if (PhysicsServer::BODY_AXIS_LOCK_Z == p_lock) {
 		btBody->setLinearFactor(btVector3(1., 1., 0.));
 	}
