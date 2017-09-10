@@ -156,7 +156,9 @@ void Area::_body_inout(int p_status, const RID &p_body, int p_instance, int p_bo
 
 	Map<ObjectID, BodyState>::Element *E = body_map.find(objid);
 
-	ERR_FAIL_COND(!body_in && !E);
+	if(!body_in && !E) {
+		return;
+	}
 
 	locked = true;
 
@@ -353,7 +355,9 @@ void Area::_area_inout(int p_status, const RID &p_area, int p_instance, int p_ar
 
 	Map<ObjectID, AreaState>::Element *E = area_map.find(objid);
 
-	ERR_FAIL_COND(!area_in && !E);
+	if(!area_in && !E) {
+		return;
+	}
 
 	locked = true;
 

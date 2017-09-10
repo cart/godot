@@ -281,19 +281,19 @@ Vector3 Basis::get_signed_scale() const {
 // Returns the rotation-reflection matrix via reference argument, and scaling information is returned as a Vector3.
 // This (internal) function is too specıfıc and named too ugly to expose to users, and probably there's no need to do so.
 Vector3 Basis::rotref_posscale_decomposition(Basis &rotref) const {
-#ifdef MATH_CHECKS
-	ERR_FAIL_COND_V(determinant() == 0, Vector3());
+// #ifdef MATH_CHECKS
+// 	ERR_FAIL_COND_V(determinant() == 0, Vector3());
 
-	Basis m = transposed() * (*this);
-	ERR_FAIL_COND_V(m.is_diagonal() == false, Vector3());
-#endif
+// 	Basis m = transposed() * (*this);
+// 	ERR_FAIL_COND_V(m.is_diagonal() == false, Vector3());
+// #endif
 	Vector3 scale = get_scale();
 	Basis inv_scale = Basis().scaled(scale.inverse()); // this will also absorb the sign of scale
 	rotref = (*this) * inv_scale;
 
-#ifdef MATH_CHECKS
-	ERR_FAIL_COND_V(rotref.is_orthogonal() == false, Vector3());
-#endif
+// #ifdef MATH_CHECKS
+// 	ERR_FAIL_COND_V(rotref.is_orthogonal() == false, Vector3());
+// #endif
 	return scale.abs();
 }
 

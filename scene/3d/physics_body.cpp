@@ -307,7 +307,10 @@ void RigidBody::_body_inout(int p_status, ObjectID p_instance, int p_body_shape,
 
 	Map<ObjectID, BodyState>::Element *E = contact_monitor->body_map.find(objid);
 
-	ERR_FAIL_COND(!body_in && !E);
+
+	if(!body_in && !E) {
+		return;
+	}
 
 	if (body_in) {
 		if (!E) {
