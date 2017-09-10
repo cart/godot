@@ -640,7 +640,6 @@ Error ResourceInteractiveLoaderBinary::poll() {
 
 		String path = external_resources[s].path;
 
-		print_line("load external res: " + path);
 		if (remaps.has(path)) {
 			path = remaps[path];
 		}
