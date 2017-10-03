@@ -136,7 +136,7 @@ static bool is_csharp_keyword(const String &p_name) {
 static bool is_singleton_black_listed(const String &p_type) {
 
 	return p_type == "IP_Unix" || p_type == "InputDefault" || p_type == "AudioServerSW" || p_type == "PhysicsServerSW" ||
-		   p_type == "Physics2DServerSW" || p_type == "SpatialSoundServerSW" || p_type == "SpatialSound2DServerSW";
+		   p_type == "Physics2DServerSW" || p_type == "SpatialSoundServerSW" || p_type == "SpatialSound2DServerSW" || p_type == "BulletPhysicsServer";
 }
 
 inline static String escape_csharp_keyword(const String &p_name) {
