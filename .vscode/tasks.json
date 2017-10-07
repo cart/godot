@@ -1,0 +1,42 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "taskName": "debug",
+            "command": "scons",
+            "args": ["p=x11", "target=debug", "tools=yes", "builtin_openssl=yes", "module_mono_enabled=yes", "mono_glue=no"],
+            "group": "build"
+        },
+        {
+            "taskName": "glue",
+            "command": "bin/godot.x11.tools.64",
+            "args": ["--generate-mono-glue", "./modules/mono/glue"],
+            "group": "build"
+        },
+        {
+            "taskName": "release",
+            "command": "scons",
+            "args": ["p=x11", "target=release_debug", "tools=yes", "builtin_openssl=yes", "module_mono_enabled=yes"],
+            "group": "build"
+        },
+        {
+            "taskName": "all",
+            "dependsOn": "dRelease",
+            "group": "build"
+        },
+        {
+            "taskName": "dGlue",
+            "dependsOn": "debug",
+            "command": "bin/godot.x11.tools.64",
+            "args": ["--generate-mono-glue", "./modules/mono/glue"]
+        },
+        {
+            "taskName": "dRelease",
+            "dependsOn": "dGlue",
+            "command": "scons",
+            "args": ["p=x11", "target=release_debug", "tools=yes", "builtin_openssl=yes", "module_mono_enabled=yes"]
+        }
+    ]
+}
