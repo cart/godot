@@ -18,7 +18,7 @@ namespace GodotSharpTools.Project
 
             GenAssemblyInfoFile(root, dir, CoreApiProject,
                                 new string[] { "[assembly: InternalsVisibleTo(\"" + EditorApiProject + "\")]" },
-                                new string[] { "System.Runtime.CompilerServices" });
+                                new string[] { "System.Runtime.CompilerServices", "System.Linq" });
 
             foreach (var item in compileItems)
             {

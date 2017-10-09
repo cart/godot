@@ -44,7 +44,7 @@ void MonoDevelopInstance::execute(const Vector<String> &p_files) {
 	execute_method->invoke(gc_handle->get_target(), args, &ex);
 
 	if (ex) {
-		mono_print_unhandled_exception(ex);
+		GDMonoUtils::print_unhandled_exception(ex);
 		ERR_FAIL();
 	}
 }
@@ -72,7 +72,7 @@ MonoDevelopInstance::MonoDevelopInstance(const String &p_solution) {
 	ctor->invoke(obj, args, &ex);
 
 	if (ex) {
-		mono_print_unhandled_exception(ex);
+		GDMonoUtils::print_unhandled_exception(ex);
 		ERR_FAIL();
 	}
 

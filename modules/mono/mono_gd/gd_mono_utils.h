@@ -161,6 +161,8 @@ MonoObject *create_managed_from(const RID &p_from);
 MonoDomain *create_domain(const String &p_friendly_name);
 
 String get_exception_name_and_message(MonoObject *p_ex);
+String get_exception_stacktrace(MonoObject *p_ex);
+void print_unhandled_exception(MonoObject *p_ex);
 
 } // GDMonoUtils
 

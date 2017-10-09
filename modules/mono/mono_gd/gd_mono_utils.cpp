@@ -364,4 +364,23 @@ String get_exception_name_and_message(MonoObject *p_ex) {
 
 	return res;
 }
+
+String get_exception_stacktrace(MonoObject *p_ex) {
+	MonoClass *klass = mono_object_get_class(p_ex);
+
+	MonoProperty *prop = mono_class_get_property_from_name(klass, "StackTrace");
+	MonoString *msg = (MonoString *)mono_property_get_value(prop, p_ex, NULL, NULL);
+
+	return GDMonoMarshal::mono_string_to_godot(msg);
+}
+
+void print_unhandled_exception(MonoObject *p_ex) {
+	String res;
+
+	res += get_exception_name_and_message(p_ex);
+	res += "\n";
+	res += get_exception_stacktrace(p_ex);
+	ERR_PRINT(res.utf8());
+	CSharpLanguage::get_singleton()->debug_break(res, false);
+}
 }

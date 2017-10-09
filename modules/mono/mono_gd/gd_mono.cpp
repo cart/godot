@@ -456,7 +456,7 @@ Error GDMono::_unload_scripts_domain() {
 
 	if (ex) {
 		ERR_PRINT("Exception thrown when unloading scripts domain:");
-		mono_print_unhandled_exception(ex);
+		GDMonoUtils::print_unhandled_exception(ex);
 		return FAILED;
 	}
 

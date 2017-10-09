@@ -69,7 +69,7 @@ SignalAwaiterHandle::~SignalAwaiterHandle() {
 			thunk(awaiter, &ex);
 
 			if (ex) {
-				mono_print_unhandled_exception(ex);
+				GDMonoUtils::print_unhandled_exception(ex);
 				ERR_FAIL_V();
 			}
 		}

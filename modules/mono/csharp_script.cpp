@@ -323,11 +323,11 @@ void CSharpLanguage::frame() {
 
 			ERR_FAIL_NULL(thunk);
 
-			MonoObject *ex;
+			MonoObject *ex = NULL;
 			thunk(task_scheduler, &ex);
 
 			if (ex) {
-				mono_print_unhandled_exception(ex);
+				GDMonoUtils::print_unhandled_exception(ex);
 				ERR_FAIL();
 			}
 		}
@@ -715,7 +715,12 @@ void CSharpInstance::_ml_call_reversed(GDMonoClass *klass, const StringName &p_m
 	GDMonoMethod *method = klass->get_method(p_method, p_argcount);
 
 	if (method) {
-		method->invoke(get_mono_object(), p_args);
+		MonoObject *ex = NULL;
+		method->invoke(get_mono_object(), p_args, &ex);
+
+		if (ex) {
+			GDMonoUtils::print_unhandled_exception(ex);
+		}
 	}
 }
 
@@ -889,7 +894,12 @@ Variant CSharpInstance::call(const StringName &p_method, const Variant **p_args,
 		GDMonoMethod *method = top->get_method(p_method, p_argcount);
 
 		if (method) {
-			MonoObject *return_value = method->invoke(mono_object, p_args);
+			MonoObject *ex = NULL;
+			MonoObject *return_value = method->invoke(mono_object, p_args, &ex);
+
+			if (ex) {
+				GDMonoUtils::print_unhandled_exception(ex);	
+			}
 
 			if (return_value) {
 				return GDMonoMarshal::mono_object_to_variant(return_value, method->get_return_type());
@@ -931,7 +941,7 @@ Variant CSharpInstance::call(const StringName &p_method, const Variant **p_args,
 			thunk(mono_object, &extra_args, awaiter->get_target(), &ex);
 
 			if (ex) {
-				mono_print_unhandled_exception(ex);
+				GDMonoUtils::print_unhandled_exception(ex);
 				ERR_FAIL_V(Variant());
 			}
 
@@ -956,8 +966,14 @@ void CSharpInstance::call_multilevel(const StringName &p_method, const Variant *
 		while (top && top != script->native) {
 			GDMonoMethod *method = top->get_method(p_method, p_argcount);
 
-			if (method)
-				method->invoke(mono_object, p_args);
+			if (method) {
+				MonoObject *ex = NULL;
+				method->invoke(mono_object, p_args, &ex);
+
+				if (ex) {
+					GDMonoUtils::print_unhandled_exception(ex);	
+				}
+			}
 
 			top = top->get_parent_class();
 		}
@@ -1215,7 +1231,7 @@ bool CSharpScript::_update_exports() {
 
 			if (ex) {
 				ERR_PRINT("Exception thrown from constructor of temporary MonoObject:");
-				mono_print_unhandled_exception(ex);
+				GDMonoUtils::print_unhandled_exception(ex);
 				tmp_object = NULL;
 				ERR_FAIL_V(false);
 			}
@@ -1302,7 +1318,12 @@ Variant CSharpScript::call(const StringName &p_method, const Variant **p_args, i
 		GDMonoMethod *method = top->get_method(p_method, p_argcount);
 
 		if (method && method->is_static()) {
-			MonoObject *result = method->invoke(NULL, p_args);
+			MonoObject *ex = NULL;
+			MonoObject *result = method->invoke(NULL, p_args, &ex);
+
+			if (ex) {
+				GDMonoUtils::print_unhandled_exception(ex);	
+			}
 
 			if (result) {
 				return GDMonoMarshal::mono_object_to_variant(result, method->get_return_type());

@@ -437,6 +437,7 @@ Error BindingsGenerator::generate_cs_core_project(const String &p_output_dir, bo
 	cs_icalls_content.push_back("using System;\n"
 								"using System.Runtime.CompilerServices;\n"
 								"using System.Collections.Generic;\n"
+								"using System.Linq;"
 								"\n");
 	cs_icalls_content.push_back("namespace " BINDINGS_NAMESPACE "\n" OPEN_BLOCK);
 	cs_icalls_content.push_back(INDENT1 "internal static class " CS_CLASS_NATIVECALLS "\n" INDENT1 OPEN_BLOCK);
@@ -529,6 +530,7 @@ Error BindingsGenerator::generate_cs_editor_project(const String &p_output_dir, 
 	cs_icalls_content.push_back("using System;\n"
 								"using System.Runtime.CompilerServices;\n"
 								"using System.Collections.Generic;\n"
+								"using System.Linq;"
 								"\n");
 	cs_icalls_content.push_back("namespace " BINDINGS_NAMESPACE "\n" OPEN_BLOCK);
 	cs_icalls_content.push_back(INDENT1 "internal static class " CS_CLASS_NATIVECALLS_EDITOR "\n" INDENT1 OPEN_BLOCK);

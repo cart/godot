@@ -806,7 +806,7 @@ MonoObject *Dictionary_to_mono_object(const Dictionary &p_dict) {
 	MonoObject *ret = arrays_to_dict(keys, values, &ex);
 
 	if (ex) {
-		mono_print_unhandled_exception(ex);
+		GDMonoUtils::print_unhandled_exception(ex);
 		ERR_FAIL_V(NULL);
 	}
 
@@ -824,7 +824,7 @@ Dictionary mono_object_to_Dictionary(MonoObject *p_dict) {
 	dict_to_arrays(p_dict, &keys, &values, &ex);
 
 	if (ex) {
-		mono_print_unhandled_exception(ex);
+		GDMonoUtils::print_unhandled_exception(ex);
 		ERR_FAIL_V(Dictionary());
 	}
 
