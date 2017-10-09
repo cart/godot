@@ -6,37 +6,82 @@
         {
             "taskName": "debug",
             "command": "scons",
-            "args": ["p=x11", "target=debug", "tools=yes", "builtin_openssl=yes", "module_mono_enabled=yes", "mono_glue=no"],
-            "group": "build"
+            "args": [
+                "p=x11",
+                "target=debug",
+                "tools=yes",
+                "builtin_openssl=yes",
+                "module_mono_enabled=yes",
+                "mono_glue=no",
+                "-j4"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "taskName": "debugWithGlue",
+            "command": "scons",
+            "args": [
+                "p=x11",
+                "target=debug",
+                "tools=yes",
+                "builtin_openssl=yes",
+                "module_mono_enabled=yes",
+                "-j4"
+            ],
+            "group": "build",
+            "problemMatcher": []
         },
         {
             "taskName": "glue",
             "command": "bin/godot.x11.tools.64",
-            "args": ["--generate-mono-glue", "./modules/mono/glue"],
+            "args": [
+                "--generate-mono-glue",
+                "./modules/mono/glue"
+            ],
             "group": "build"
         },
         {
             "taskName": "release",
             "command": "scons",
-            "args": ["p=x11", "target=release_debug", "tools=yes", "builtin_openssl=yes", "module_mono_enabled=yes"],
-            "group": "build"
+            "args": [
+                "p=x11",
+                "target=release_debug",
+                "tools=yes",
+                "builtin_openssl=yes",
+                "module_mono_enabled=yes",
+                "-j4"
+            ],
+            "group": "build",
+            "problemMatcher": []
         },
         {
             "taskName": "all",
             "dependsOn": "dRelease",
-            "group": "build"
+            "group": "build",
+            "problemMatcher": []
         },
         {
             "taskName": "dGlue",
             "dependsOn": "debug",
             "command": "bin/godot.x11.tools.64",
-            "args": ["--generate-mono-glue", "./modules/mono/glue"]
+            "args": [
+                "--generate-mono-glue",
+                "./modules/mono/glue"
+            ]
         },
         {
             "taskName": "dRelease",
             "dependsOn": "dGlue",
             "command": "scons",
-            "args": ["p=x11", "target=release_debug", "tools=yes", "builtin_openssl=yes", "module_mono_enabled=yes"]
+            "args": [
+                "p=x11",
+                "target=release_debug",
+                "tools=yes",
+                "builtin_openssl=yes",
+                "module_mono_enabled=yes",
+                "-j4"
+            ]
         }
     ]
 }
