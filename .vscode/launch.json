@@ -6,7 +6,7 @@
                 "type": "cppdbg",
                 "request": "launch",
                 "program": "${workspaceRoot}/bin/godot.x11.tools.64",
-                "args": ["-e", "--path", "/home/carter/Code/high-hat"],
+                "args": ["--path", "/home/carter/Code/high-hat"],
                 "stopAtEntry": false,
                 "cwd": "/home/carter/Code/high-hat",
                 "environment": [],

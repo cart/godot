@@ -104,12 +104,12 @@ MonoAssembly *GDMonoAssembly::_preload_hook(MonoAssemblyName *aname, char **asse
 		if (rootdir) {
 			search_dirs.push_back(String(rootdir).plus_file("mono").plus_file("4.5"));
 		}
-
-		while (assemblies_path) {
-			if (*assemblies_path)
-				search_dirs.push_back(*assemblies_path);
-			++assemblies_path;
-		}
+		search_dirs.push_back("/usr/lib");
+		// while (assemblies_path) {
+		// 	if (*assemblies_path)
+		// 		search_dirs.push_back(*assemblies_path);
+		// 	++assemblies_path;
+		// }
 	}
 
 	return NULL;
