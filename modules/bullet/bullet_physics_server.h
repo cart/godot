@@ -174,6 +174,7 @@ public:
 
 	virtual void body_set_space(RID p_body, RID p_space);
 	virtual RID body_get_space(RID p_body) const;
+	virtual PhysicsDirectBodyState *body_get_direct_state(RID p_body);
 
 	virtual void body_set_mode(RID p_body, BodyMode p_mode);
 	virtual BodyMode body_get_mode(RID p_body) const;

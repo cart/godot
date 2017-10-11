@@ -1344,3 +1344,8 @@ RigidCollisionObjectBullet *BulletPhysicsServer::get_rigid_collisin_object(RID p
 	}
 	return NULL;
 }
+
+PhysicsDirectBodyState *BulletPhysicsServer::body_get_direct_state(RID p_body)
+{
+	return NULL;
+}
