@@ -41,6 +41,13 @@ namespace Godot
             new Basis(0f, -1f, 0f, 0f, 0f, -1f, 1f, 0f, 0f)
         };
 
+        private static readonly Basis nanBasis = new Basis
+        (
+            float.NaN, float.NaN, float.NaN,
+            float.NaN, float.NaN, float.NaN,
+            float.NaN, float.NaN, float.NaN
+        );
+
         public Vector3 x;
         public Vector3 y;
         public Vector3 z;
@@ -56,9 +63,9 @@ namespace Godot
             {
                 return new Vector3
                 (
-                    new Vector3(this[0, 0], this[1, 0], this[2, 0]).Length(),
-                    new Vector3(this[0, 1], this[1, 1], this[2, 1]).Length(),
-                    new Vector3(this[0, 2], this[1, 2], this[2, 2]).Length()
+                    x.Length(),
+                    y.Length(),
+                    z.Length()
                 );
             }
         }
@@ -133,28 +140,20 @@ namespace Godot
             }
         }
 
-        internal static Basis CreateFromAxes(Vector3 xAxis, Vector3 yAxis, Vector3 zAxis)
-        {
-            return new Basis
-            (
-                new Vector3(xAxis.x, yAxis.x, zAxis.x),
-                new Vector3(xAxis.y, yAxis.y, zAxis.y),
-                new Vector3(xAxis.z, yAxis.z, zAxis.z)
-            );
-        }
-
         public float Determinant()
         {
-            return this[0, 0] * (this[1, 1] * this[2, 2] - this[2, 1] * this[1, 2]) -
-                    this[1, 0] * (this[0, 1] * this[2, 2] - this[2, 1] * this[0, 2]) +
-                    this[2, 0] * (this[0, 1] * this[1, 2] - this[1, 1] * this[0, 2]);
+            return 
+                this[0, 0] * (this[1, 1] * this[2, 2] - this[1, 2] * this[2, 1]) -
+                this[0, 1] * (this[1, 0] * this[2, 2] - this[1, 2] * this[2, 0]) +
+                this[0, 2] * (this[1, 0] * this[2, 1] - this[1, 1] * this[2, 0]);
         }
 
         public Vector3 GetAxis(int axis)
         {
-            return new Vector3(this[0, axis], this[1, axis], this[2, axis]);
+            return this[axis];
         }
 
+        // TODO: transpose
         public Vector3 GetEuler()
         {
             Basis m = this.Orthonormalized();
@@ -182,7 +181,7 @@ namespace Godot
             else
             {
                 euler.x = -Mathf.PI * 0.5f;
-                euler.y = -Mathf.Atan2(-m.x[1], m.x[0]);
+                euler.y = Mathf.Atan2(-m.x[1], m.x[0]);
             }
 
             return euler;
@@ -220,58 +219,42 @@ namespace Godot
 
         public Basis Inverse()
         {
-            Basis inv = this;
+            float cofactor0 = this[1, 1] * this[2, 2] - this[1, 2] * this[2, 1];
+            float cofactor1 = this[1, 2] * this[2, 0] - this[1, 0] * this[2, 2];
+            float cofactor2 = this[1, 0] * this[2, 1] - this[1, 1] * this[2, 0];
 
-            float[] co = new float[3]
+            float determinant = this[0, 0] * cofactor0 + this[0, 1] * cofactor1 + this[0, 2] * cofactor2;
+
+            if (determinant == 0)
             {
-                inv[1, 1] * inv[2, 2] - inv[1, 2] * inv[2, 1],
-                inv[1, 2] * inv[2, 0] - inv[1, 0] * inv[2, 2],
-                inv[1, 0] * inv[2, 1] - inv[1, 1] * inv[2, 0]
-            };
-
-            float det = inv[0, 0] * co[0] + inv[0, 1] * co[1] + inv[0, 2] * co[2];
-
-            if (det == 0)
-            {
-                return new Basis
-                (
-                    float.NaN, float.NaN, float.NaN,
-                    float.NaN, float.NaN, float.NaN,
-                    float.NaN, float.NaN, float.NaN
-                );
+                return nanBasis;
             }
 
-            float s = 1.0f / det;
+            float s = 1.0f / determinant;
 
-            inv = new Basis
+            return new Basis
             (
-                co[0] * s,
-                inv[0, 2] * inv[2, 1] - inv[0, 1] * inv[2, 2] * s,
-                inv[0, 1] * inv[1, 2] - inv[0, 2] * inv[1, 1] * s,
-                co[1] * s,
-                inv[0, 0] * inv[2, 2] - inv[0, 2] * inv[2, 0] * s,
-                inv[0, 2] * inv[1, 0] - inv[0, 0] * inv[1, 2] * s,
-                co[2] * s,
-                inv[0, 1] * inv[2, 0] - inv[0, 0] * inv[2, 1] * s,
-                inv[0, 0] * inv[1, 1] - inv[0, 1] * inv[1, 0] * s
+                s * cofactor0,
+                s * (this[0, 2] * this[2, 1] - this[0, 1] * this[2, 2]),
+                s * (this[0, 1] * this[1, 2] - this[0, 2] * this[1, 1]),
+                s * cofactor1,
+                s * (this[0, 0] * this[2, 2] - this[0, 2] * this[2, 0]),
+                s * (this[0, 2] * this[1, 0] - this[0, 0] * this[1, 2]),
+                s * cofactor2,
+                s * (this[0, 1] * this[2, 0] - this[0, 0] * this[2, 1]),
+                s * (this[0, 0] * this[1, 1] - this[0, 1] * this[1, 0])
             );
-
-            return inv;
         }
 
         public Basis Orthonormalized()
         {
-            Vector3 xAxis = GetAxis(0);
-            Vector3 yAxis = GetAxis(1);
-            Vector3 zAxis = GetAxis(2);
-
-            xAxis.Normalize();
-            yAxis = (yAxis - xAxis * (xAxis.Dot(yAxis)));
+            Vector3 xAxis = x.Normalized();
+            Vector3 yAxis = (y - xAxis * xAxis.Dot(y));
             yAxis.Normalize();
-            zAxis = (zAxis - xAxis * (xAxis.Dot(zAxis)) - yAxis * (yAxis.Dot(zAxis)));
+            Vector3 zAxis = (z - xAxis * xAxis.Dot(z) - yAxis * yAxis.Dot(z));
             zAxis.Normalize();
 
-            return Basis.CreateFromAxes(xAxis, yAxis, zAxis);
+            return new Basis(xAxis, yAxis, zAxis);
         }
 
         public Basis Rotated(Vector3 axis, float phi)
@@ -283,15 +266,9 @@ namespace Godot
         {
             Basis m = this;
 
-            m[0, 0] *= scale.x;
-            m[0, 1] *= scale.x;
-            m[0, 2] *= scale.x;
-            m[1, 0] *= scale.y;
-            m[1, 1] *= scale.y;
-            m[1, 2] *= scale.y;
-            m[2, 0] *= scale.z;
-            m[2, 1] *= scale.z;
-            m[2, 2] *= scale.z;
+            m.x *= scale.x;
+            m.y *= scale.y;
+            m.z *= scale.z;
 
             return m;
         }
@@ -334,9 +311,9 @@ namespace Godot
         {
             return new Vector3
             (
-                this[0].Dot(v),
-                this[1].Dot(v),
-                this[2].Dot(v)
+                x.Dot(v),
+                y.Dot(v),
+                z.Dot(v)
             );
         }
 

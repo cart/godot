@@ -61,7 +61,7 @@ namespace Godot
             xAxis.Normalize();
             yAxis.Normalize();
 
-            basis = Basis.CreateFromAxes(xAxis, yAxis, zAxis);
+            basis = new Basis(xAxis, yAxis, zAxis);
 
             origin = eye;
         }
@@ -100,7 +100,7 @@ namespace Godot
 
         public Transform(Vector3 xAxis, Vector3 yAxis, Vector3 zAxis, Vector3 origin)
         {
-            this.basis = Basis.CreateFromAxes(xAxis, yAxis, zAxis);
+            this.basis = new Basis(xAxis, yAxis, zAxis);
             this.origin = origin;
         }
 
