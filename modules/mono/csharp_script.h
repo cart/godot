@@ -48,8 +48,6 @@ class CSharpLanguage;
 #ifdef NO_SAFE_CAST
 template <typename TScriptInstance, typename TScriptLanguage>
 TScriptInstance *cast_script_instance(ScriptInstance *p_inst) {
-	if (!p_inst)
-		return NULL;
 	return p_inst->get_language() == TScriptLanguage::get_singleton() ? static_cast<TScriptInstance *>(p_inst) : NULL;
 }
 #else
@@ -179,19 +177,14 @@ class CSharpInstance : public ScriptInstance {
 
 	friend class CSharpScript;
 	friend class CSharpLanguage;
-
 	Object *owner;
-	bool base_ref;
-	bool ref_dying;
-	bool unsafe_referenced;
-
 	Ref<CSharpScript> script;
 	Ref<MonoGCHandle> gchandle;
+	bool base_ref;
+	bool ref_dying;
 
-	bool _reference_owner_unsafe();
-	bool _unreference_owner_unsafe();
-
-	MonoObject *_internal_new_managed();
+	void _reference_owner_unsafe();
+	void _unreference_owner_unsafe();
 
 	// Do not use unless you know what you are doing
 	friend void GDMonoInternals::tie_managed_to_unmanaged(MonoObject *, Object *);
@@ -215,8 +208,7 @@ public:
 	virtual void call_multilevel(const StringName &p_method, const Variant **p_args, int p_argcount);
 	virtual void call_multilevel_reversed(const StringName &p_method, const Variant **p_args, int p_argcount);
 
-	void mono_object_disposed(MonoObject *p_obj);
-	void mono_object_disposed_baseref(MonoObject *p_obj, bool p_is_finalizer, bool &r_owner_deleted);
+	void mono_object_disposed();
 
 	virtual void refcount_incremented();
 	virtual bool refcount_decremented();
@@ -225,7 +217,7 @@ public:
 	virtual MultiplayerAPI::RPCMode get_rset_mode(const StringName &p_variable) const;
 
 	virtual void notification(int p_notification);
-	void _call_notification(int p_notification);
+	void call_notification_no_check(MonoObject *p_mono_object, int p_notification);
 
 	virtual Ref<Script> get_script() const;
 
@@ -233,12 +225,6 @@ public:
 
 	CSharpInstance();
 	~CSharpInstance();
-};
-
-struct CSharpScriptBinding {
-	StringName type_name;
-	GDMonoClass *wrapper_class;
-	Ref<MonoGCHandle> gchandle;
 };
 
 class CSharpLanguage : public ScriptLanguage {
@@ -255,11 +241,10 @@ class CSharpLanguage : public ScriptLanguage {
 
 	Mutex *lock;
 	Mutex *script_bind_lock;
-	Mutex *script_gchandle_release_lock;
 
 	Map<Ref<CSharpScript>, Map<ObjectID, List<Pair<StringName, Variant> > > > to_reload;
 
-	Map<Object *, CSharpScriptBinding> script_bindings;
+	Map<Object *, Ref<MonoGCHandle> > gchandle_bindings;
 
 	struct StringNameCache {
 
@@ -286,9 +271,6 @@ public:
 	_FORCE_INLINE_ const StringNameCache &get_string_names() { return string_names; }
 
 	_FORCE_INLINE_ static CSharpLanguage *get_singleton() { return singleton; }
-
-	static void release_script_gchandle(Ref<MonoGCHandle> &p_gchandle);
-	static void release_script_gchandle(MonoObject *p_pinned_expected_obj, Ref<MonoGCHandle> &p_gchandle);
 
 	bool debug_break(const String &p_error, bool p_allow_continue = true);
 	bool debug_break_parse(const String &p_file, int p_line, const String &p_error);

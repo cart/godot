@@ -54,11 +54,7 @@ namespace Godot
                 if (memoryOwn)
                 {
                     memoryOwn = false;
-                    godot_icall_Reference_Disposed(this, ptr, !disposing);
-                }
-                else
-                {
-                    godot_icall_Object_Disposed(this, ptr);
+                    godot_icall_Object_Dtor(this, ptr);
                 }
 
                 this.ptr = IntPtr.Zero;
@@ -76,10 +72,7 @@ namespace Godot
         internal extern static IntPtr godot_icall_Object_Ctor(Object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern static void godot_icall_Object_Disposed(Object obj, IntPtr ptr);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern static void godot_icall_Reference_Disposed(Object obj, IntPtr ptr, bool isFinalizer);
+        internal extern static void godot_icall_Object_Dtor(object obj, IntPtr ptr);
 
         // Used by the generated API
         [MethodImpl(MethodImplOptions.InternalCall)]

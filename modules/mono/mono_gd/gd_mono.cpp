@@ -708,11 +708,7 @@ Error GDMono::_unload_scripts_domain() {
 	mono_gc_collect(mono_gc_max_generation());
 
 	finalizing_scripts_domain = true;
-
-	if (!mono_domain_finalize(scripts_domain, 2000)) {
-		ERR_PRINT("Mono: Domain finalization timeout");
-	}
-
+	mono_domain_finalize(scripts_domain, 2000);
 	finalizing_scripts_domain = false;
 
 	mono_gc_collect(mono_gc_max_generation());
@@ -939,7 +935,7 @@ GDMono::GDMono() {
 
 GDMono::~GDMono() {
 
-	if (is_runtime_initialized()) {
+	if (runtime_initialized) {
 
 		if (scripts_domain) {
 
@@ -964,9 +960,8 @@ GDMono::~GDMono() {
 
 		print_verbose("Mono: Runtime cleanup...");
 
-		mono_jit_cleanup(root_domain);
-
 		runtime_initialized = false;
+		mono_jit_cleanup(root_domain);
 	}
 
 	if (gdmono_log)
@@ -976,6 +971,51 @@ GDMono::~GDMono() {
 }
 
 _GodotSharp *_GodotSharp::singleton = NULL;
+
+void _GodotSharp::_dispose_object(Object *p_object) {
+
+	if (p_object->get_script_instance()) {
+		CSharpInstance *cs_instance = CAST_CSHARP_INSTANCE(p_object->get_script_instance());
+		if (cs_instance) {
+			cs_instance->mono_object_disposed();
+			return;
+		}
+	}
+
+	// Unsafe refcount decrement. The managed instance also counts as a reference.
+	// See: CSharpLanguage::alloc_instance_binding_data(Object *p_object)
+	if (Object::cast_to<Reference>(p_object)->unreference()) {
+		memdelete(p_object);
+	}
+}
+
+void _GodotSharp::_dispose_callback() {
+
+#ifndef NO_THREADS
+	queue_mutex->lock();
+#endif
+
+	for (List<Object *>::Element *E = obj_delete_queue.front(); E; E = E->next()) {
+		_dispose_object(E->get());
+	}
+
+	for (List<NodePath *>::Element *E = np_delete_queue.front(); E; E = E->next()) {
+		memdelete(E->get());
+	}
+
+	for (List<RID *>::Element *E = rid_delete_queue.front(); E; E = E->next()) {
+		memdelete(E->get());
+	}
+
+	obj_delete_queue.clear();
+	np_delete_queue.clear();
+	rid_delete_queue.clear();
+	queue_empty = true;
+
+#ifndef NO_THREADS
+	queue_mutex->unlock();
+#endif
+}
 
 void _GodotSharp::attach_thread() {
 
@@ -987,57 +1027,81 @@ void _GodotSharp::detach_thread() {
 	GDMonoUtils::detach_current_thread();
 }
 
-int32_t _GodotSharp::get_domain_id() {
+bool _GodotSharp::is_finalizing_domain() {
 
-	MonoDomain *domain = mono_domain_get();
-	CRASH_COND(!domain); // User must check if runtime is initialized before calling this method
-	return mono_domain_get_id(domain);
+	return GDMono::get_singleton()->is_finalizing_scripts_domain();
 }
 
-int32_t _GodotSharp::get_scripts_domain_id() {
+bool _GodotSharp::is_domain_loaded() {
 
-	MonoDomain *domain = SCRIPTS_DOMAIN;
-	CRASH_COND(!domain); // User must check if scripts domain is loaded before calling this method
-	return mono_domain_get_id(domain);
+	return GDMono::get_singleton()->get_scripts_domain() != NULL;
 }
 
-bool _GodotSharp::is_scripts_domain_loaded() {
+#define ENQUEUE_FOR_DISPOSAL(m_queue, m_inst)                                   \
+	m_queue.push_back(m_inst);                                                  \
+	if (queue_empty) {                                                          \
+		queue_empty = false;                                                    \
+		if (!is_finalizing_domain()) { /* call_deferred may not be safe here */ \
+			call_deferred("_dispose_callback");                                 \
+		}                                                                       \
+	}
 
-	return GDMono::get_singleton()->is_runtime_initialized() && SCRIPTS_DOMAIN != NULL;
+void _GodotSharp::queue_dispose(MonoObject *p_mono_object, Object *p_object) {
+
+	if (GDMonoUtils::is_main_thread() && !GDMono::get_singleton()->is_finalizing_scripts_domain()) {
+		_dispose_object(p_object);
+	} else {
+#ifndef NO_THREADS
+		queue_mutex->lock();
+#endif
+
+		// This is our last chance to invoke notification predelete (this is being called from the finalizer)
+		// We must use the MonoObject* passed by the finalizer, because the weak GC handle target returns NULL at this point
+		CSharpInstance *si = CAST_CSHARP_INSTANCE(p_object->get_script_instance());
+		if (si) {
+			si->call_notification_no_check(p_mono_object, Object::NOTIFICATION_PREDELETE);
+		}
+
+		ENQUEUE_FOR_DISPOSAL(obj_delete_queue, p_object);
+
+#ifndef NO_THREADS
+		queue_mutex->unlock();
+#endif
+	}
 }
 
-bool _GodotSharp::_is_domain_finalizing_for_unload(int32_t p_domain_id) {
+void _GodotSharp::queue_dispose(NodePath *p_node_path) {
 
-	return is_domain_finalizing_for_unload(p_domain_id);
+	if (GDMonoUtils::is_main_thread() && !GDMono::get_singleton()->is_finalizing_scripts_domain()) {
+		memdelete(p_node_path);
+	} else {
+#ifndef NO_THREADS
+		queue_mutex->lock();
+#endif
+
+		ENQUEUE_FOR_DISPOSAL(np_delete_queue, p_node_path);
+
+#ifndef NO_THREADS
+		queue_mutex->unlock();
+#endif
+	}
 }
 
-bool _GodotSharp::is_domain_finalizing_for_unload() {
+void _GodotSharp::queue_dispose(RID *p_rid) {
 
-	return is_domain_finalizing_for_unload(mono_domain_get());
-}
+	if (GDMonoUtils::is_main_thread() && !GDMono::get_singleton()->is_finalizing_scripts_domain()) {
+		memdelete(p_rid);
+	} else {
+#ifndef NO_THREADS
+		queue_mutex->lock();
+#endif
 
-bool _GodotSharp::is_domain_finalizing_for_unload(int32_t p_domain_id) {
+		ENQUEUE_FOR_DISPOSAL(rid_delete_queue, p_rid);
 
-	return is_domain_finalizing_for_unload(mono_domain_get_by_id(p_domain_id));
-}
-
-bool _GodotSharp::is_domain_finalizing_for_unload(MonoDomain *p_domain) {
-
-	if (!p_domain)
-		return true;
-	if (p_domain == SCRIPTS_DOMAIN && GDMono::get_singleton()->is_finalizing_scripts_domain())
-		return true;
-	return mono_domain_is_unloading(p_domain);
-}
-
-bool _GodotSharp::is_runtime_shutting_down() {
-
-	return mono_runtime_is_shutting_down();
-}
-
-bool _GodotSharp::is_runtime_initialized() {
-
-	return GDMono::get_singleton()->is_runtime_initialized();
+#ifndef NO_THREADS
+		queue_mutex->unlock();
+#endif
+	}
 }
 
 void _GodotSharp::_bind_methods() {
@@ -1045,13 +1109,10 @@ void _GodotSharp::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("attach_thread"), &_GodotSharp::attach_thread);
 	ClassDB::bind_method(D_METHOD("detach_thread"), &_GodotSharp::detach_thread);
 
-	ClassDB::bind_method(D_METHOD("get_domain_id"), &_GodotSharp::get_domain_id);
-	ClassDB::bind_method(D_METHOD("get_scripts_domain_id"), &_GodotSharp::get_scripts_domain_id);
-	ClassDB::bind_method(D_METHOD("is_scripts_domain_loaded"), &_GodotSharp::is_scripts_domain_loaded);
-	ClassDB::bind_method(D_METHOD("is_domain_finalizing_for_unload", "domain_id"), &_GodotSharp::_is_domain_finalizing_for_unload);
+	ClassDB::bind_method(D_METHOD("is_finalizing_domain"), &_GodotSharp::is_finalizing_domain);
+	ClassDB::bind_method(D_METHOD("is_domain_loaded"), &_GodotSharp::is_domain_loaded);
 
-	ClassDB::bind_method(D_METHOD("is_runtime_shutting_down"), &_GodotSharp::is_runtime_shutting_down);
-	ClassDB::bind_method(D_METHOD("is_runtime_initialized"), &_GodotSharp::is_runtime_initialized);
+	ClassDB::bind_method(D_METHOD("_dispose_callback"), &_GodotSharp::_dispose_callback);
 }
 
 _GodotSharp::_GodotSharp() {
