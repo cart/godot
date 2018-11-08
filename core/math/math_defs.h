@@ -45,10 +45,6 @@
 #define Math_INF INFINITY
 #define Math_NAN NAN
 
-#ifdef DEBUG_ENABLED
-#define MATH_CHECKS
-#endif
-
 #define USEC_TO_SEC(m_usec) ((m_usec) / 1000000.0)
 
 enum ClockDirection {
